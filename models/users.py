@@ -1,16 +1,18 @@
-from sqlalchemy import Column, String, Integer,Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime
 from core.database import Base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+import datetime
+from typing import List
 
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    email = Column(String, unique=True)
-    password = Column(String)
-    date = Column(DateTime)
-    is_active = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)
-    post = relationship("Post", back_populates="user",
-                        cascade="all, delete-orphan")
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True)
+    email: Mapped[str] = mapped_column(String, unique=True)
+    password: Mapped[str] = mapped_column(String)
+    date: Mapped[datetime.datetime] = mapped_column(DateTime)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    post: Mapped[List["Post"]] = relationship("Post", back_populates="user",
+                                              cascade="all, delete-orphan")
