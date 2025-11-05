@@ -1,7 +1,7 @@
 from sqlalchemy import String, Boolean, DateTime
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-import datetime
+from datetime import datetime
 from typing import List
 
 
@@ -11,8 +11,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(String, unique=True)
     email: Mapped[str] = mapped_column(String, unique=True)
     password: Mapped[str] = mapped_column(String)
-    date: Mapped[datetime.datetime] = mapped_column(DateTime)
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                           default=datetime.utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    post: Mapped[List["Post"]] = relationship("Post", back_populates="user",
+    post: Mapped["List[Post]"] = relationship("Post", back_populates="user",
                                               cascade="all, delete-orphan")
