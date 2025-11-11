@@ -1,10 +1,11 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field, EmailStr
 
 
 class UserBase(BaseModel):
     name: str
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(description="Email пользователя")
+    password: str = Field(min_length=8,
+                          description="Пароль (минимум 8 символов)")
 
 
 class UserBaseCreate(UserBase):
