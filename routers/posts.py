@@ -1,9 +1,11 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from models.schemas import PostBase, PostBaseCreate
 from models.posts import Post
+from models.users import User
 from sqlalchemy import select, update, delete
 from core.db_depends import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from routers.auth import get_current_auth_user
 
 
 router = APIRouter(prefix="/posts", tags=["posts"],)
@@ -17,7 +19,9 @@ async def get_all_posts(db: AsyncSession = Depends(get_db)):
 
 @router.post("/", response_model=PostBase, status_code=status.HTTP_201_CREATED)
 async def create_post(post: PostBaseCreate,
-                      db: AsyncSession = Depends(get_db)):
+                      user_auth: User = Depends(get_current_auth_user),
+                      db: AsyncSession = Depends(get_db)
+                      ):
     db_post = Post(**post.model_dump())
     db.add(db_post)
     await db.commit()
@@ -27,6 +31,7 @@ async def create_post(post: PostBaseCreate,
 
 @router.put('/{post_id}')
 async def update_post(post_id: int, post: PostBaseCreate,
+                      user_auth: User = Depends(get_current_auth_user),
                       db: AsyncSession = Depends(get_db)):
     db_post_result = await db.scalars(select(Post).where(Post.id == post_id))
     db_post = db_post_result.first()
@@ -42,7 +47,9 @@ async def update_post(post_id: int, post: PostBaseCreate,
 
 
 @router.delete("/{post_id}")
-async def delete_post(post_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_post(post_id: int,
+                      user_auth: User = Depends(get_current_auth_user),
+                      db: AsyncSession = Depends(get_db)):
     db_post_result = await db.scalars(select(Post).where(Post.id == post_id))
     db_post = db_post_result.first()
     if not db_post:
