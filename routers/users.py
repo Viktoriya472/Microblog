@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from routers.auth import verify_password, hash_password, create_access_token
 from routers.auth import get_current_superuser, get_current_auth_user
 
+
 router = APIRouter(prefix="/users", tags=["users"],)
 
 
