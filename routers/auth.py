@@ -13,6 +13,8 @@ from models.users import User
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
 # создаём объект OAuth2, который указывает, что эндпоинт логина находится по адресу /users/token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")
 
@@ -37,14 +39,21 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 async def get_current_user(token: str = Depends(oauth2_scheme),
                            db: AsyncSession = Depends(get_db)):
     # token- извлекает токен из заголовка запроса с помощью OAuth2PasswordBearer
     # Проверяет JWT и возвращает пользователя из базы
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"})
+        detail="Could not validate credentials",)
     try:
         # Декодирует JWT, проверяя его подпись с использованием SECRET_KEY и алгоритма
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -56,7 +65,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     # Этот блок перехватывает все остальные возможные ошибки, связанные с JWT
     except jwt.PyJWTError:
