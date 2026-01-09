@@ -12,6 +12,10 @@ class UserBaseCreate(UserBase):
     pass
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 class PostBase(BaseModel):
     title: str
     text: str
@@ -19,4 +23,15 @@ class PostBase(BaseModel):
 
 
 class PostBaseCreate(PostBase):
+    pass
+
+
+class ReviewBase(BaseModel):
+    comment: str
+    grade: float
+    post_id: int
+    user_id: int
+
+
+class CreateReview(ReviewBase):
     pass

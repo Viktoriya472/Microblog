@@ -34,7 +34,8 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     # Добавляет поле exp (expiration) в payload токена
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire,
+                      "token_type": "access"})
     # Кодирует данные в JWT с использованием SECRET_KEY и алгоритма подписи
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -43,7 +44,8 @@ def create_refresh_token(data: dict):
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(
         days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire,
+                      "token_type": "refresh"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 

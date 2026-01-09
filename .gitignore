@@ -3,3 +3,4 @@
 __pycache__/
 */__pycache__
 midrations/__pycache__/
+/migrations/versions/__pycache__

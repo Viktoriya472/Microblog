@@ -2,7 +2,7 @@ from sqlalchemy import String, Boolean, DateTime
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import datetime
-from typing import List
+from models.reviews import Review
 
 
 class User(Base):
@@ -15,5 +15,8 @@ class User(Base):
         DateTime, default=datetime.datetime.now())
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    post: Mapped["List[Post]"] = relationship("Post", back_populates="user",
-                                              cascade="all, delete-orphan")
+    posts: Mapped[list["Post"]] = relationship("Post", back_populates="user",
+                                               cascade="all, delete-orphan")
+    reviews: Mapped[list["Review"]] = relationship("Review",
+                                                   back_populates="user",
+                                                   cascade="all, delete-orphan")

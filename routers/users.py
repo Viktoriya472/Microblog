@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Depends, HTTPException
-from models.schemas import UserBase, UserBaseCreate
+from models.schemas import UserBase, UserBaseCreate, RefreshTokenRequest
 from sqlalchemy import select, update, delete
 from core.db_depends import get_db
 from models.users import User
@@ -34,6 +34,7 @@ async def create_user(user: UserBaseCreate,
     )
     db.add(db_user)
     await db.commit()
+    await db.refresh(db_user)
     return db_user
 
 
@@ -54,38 +55,52 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(),
     refresh_token = create_refresh_token(data={"sub": user.email,
                                                "id": user.id})
     return {"access_token": access_token,
-            "refresh_token": refresh_token}
+            "refresh_token": refresh_token,
+            "token_type": "bearer"}
 
 
 @router.post("/refresh-token")
-async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
+async def refresh_token(body: RefreshTokenRequest,
+                        db: AsyncSession = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate refresh token")
+    old_refresh_token = body.refresh_token
     try:
         # декодируем рефреш-токен, проверяя его подпись и срок действия (exp)
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        payload = jwt.decode(old_refresh_token,
+                             SECRET_KEY,
+                             algorithms=[ALGORITHM])
+        email: str | None = payload.get("sub")
+        token_type: str | None = payload.get("token_type")
+
+        if email is None or token_type != "refresh":
             raise credentials_exception
-    except jwt.PyJWTError:
+
+    except jwt.ExpiredSignatureError:
+        # refresh-токен истёк
         raise credentials_exception
+    except jwt.PyJWTError:
+        # подпись неверна или токен повреждён
+        raise credentials_exception
+
     # проверяем, существует ли активный пользователь с указанным email
     result = await db.scalars(select(User).where(User.email == email))
     user = result.first()
     if user is None:
         raise credentials_exception
     # создаём новый access-токен с тем же payload (sub, id) и сроком действия
-    access_token = create_access_token(data={"sub": user.email,
+    new_refresh_token = create_refresh_token(data={"sub": user.email,
                                              "id": user.id})
-    return {"accsess_token": access_token}
+    return {"refresh_token": new_refresh_token,
+            "token_type": "bearer"}
 
 
 @router.put("/{user_id}", response_model=UserBase)
 async def update_user(user_id: int,
                       user: UserBaseCreate,
-                      db: AsyncSession = Depends(get_db),
-                      auth_user: User = Depends(get_current_auth_user),):
+                      auth_user: User = Depends(get_current_auth_user),
+                      db: AsyncSession = Depends(get_db)):
     db_user_result = await db.scalars(select(User).where(User.id == user_id))
     db_user = db_user_result.first()
     if not db_user:
